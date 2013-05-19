@@ -5,7 +5,7 @@ module Grocer
   class Notification
     MAX_PAYLOAD_SIZE = 256
 
-    attr_accessor :identifier, :expiry, :device_token
+    attr_accessor :identifier, :expiry, :device_token, :error_response
     attr_reader :alert, :badge, :custom, :sound
 
     attr_accessor :created_at
@@ -66,6 +66,10 @@ module Grocer
 
     def mark_sent
       (@created_at||=[]) << Time.now
+    end
+
+    def unmark_sent
+      @created_at = nil
     end
 
     def inspect

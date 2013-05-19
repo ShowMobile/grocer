@@ -1,6 +1,5 @@
 require 'grocer/error_response'
 require 'grocer/feedback'
-require 'grocer/history'
 require 'grocer/mobile_device_management_notification'
 require 'grocer/newsstand_notification'
 require 'grocer/notification'
