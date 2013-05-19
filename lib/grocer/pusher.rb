@@ -10,9 +10,14 @@ module Grocer
       @connection = connection
     end
 
+    # returns 4 arrays:
+    #    sent        <- notifications we that have been sent
+    #    maybe_sent  <- notifications that might have been sent
+    #    failed      <- notifications that we got an error response for (currently this array can contain only one notification)
+    #    not_sent    <- notifications that we were not sent because they happended after a notification that we got an error response for
     def push(notifications)
       notifications = [notifications] if notifications.is_a?(Grocer::Notification)
-      return [], [], [] if !notifications.is_a?(Array) or notifications.count <= 0
+      return [], [], [], [] if !notifications.is_a?(Array) or notifications.count <= 0
 
       connect
 
@@ -25,8 +30,14 @@ module Grocer
         notification_index += 1
 
         # try to read error
-        error_response = read_error(0, true)
-        error_response = nil if error_response && error_response.status_code == 0
+        begin
+          error_response = read_error(0, true)
+          error_response = nil if error_response && error_response.status_code == 0
+        rescue Exception => e
+          # ok, we now got an exception while trying to read an error response
+          # that means we cannot find out which notifications where really sent and which not
+          return [], notifications[0..notification_index-1], [], [notification_index..notifications.count-1]
+        end
         
         if error_response
           break
@@ -71,9 +82,9 @@ module Grocer
           end
         end
 
-        return sent_notifications, failed_notifications, not_sent_notifications
+        return sent_notifications, [], failed_notifications, not_sent_notifications
       else
-        return notifications, [], []
+        return notifications, [], [], []
       end
     end
 
@@ -85,7 +96,11 @@ module Grocer
         end
       rescue EOFError
         close
-        raise if raise_exception
+        if raise_exception
+          raise
+        else
+          nil
+        end
       end
     end
 
